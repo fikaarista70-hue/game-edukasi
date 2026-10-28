@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Labirin Quest - Barisan & Deret Aritmatika</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+  body {
+    background: radial-gradient(circle at center, #1a1a3e, #0a0a1f);
+    min-height: 100vh;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow: hidden;
+  }
+  .game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+  h1 {
+    font-size: 1.8rem;
+    background: linear-gradient(90deg, #ffd700, #ff6b6b, #4ecdc4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-align: center;
+  }
+  .hud {
+    display: flex;
+    gap: 20px;
+    background: rgba(255,255,255,0.08);
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 0.95rem;
+  }
+  .hud span { font-weight: bold; }
+  .question-box {
+    background: rgba(0,0,0,0.5);
+    border: 2px solid #4ecdc4;
+    border-radius: 12px;
+    padding: 15px 20px;
+    max-width: 600px;
+    text-align: center;
+    min-height: 80px;
+    box-shadow: 0 0 20px rgba(78,205,196,0.3);
+  }
+  .question-box .level {
+    font-size: 0.85rem;
+    color: #ffd700;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  .question-box .teks {
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  canvas {
+    border: 3px solid #4ecdc4;
+    border-radius: 10px;
+    box-shadow: 0 0 30px rgba(78,205,196,0.4);
+    background: #0a0a1f;
+  }
+  .controls {
+    display: flex;
+    gap: 10px;
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+  .controls kbd {
+    background: #333;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    font-family: monospace;
+  }
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+  .overlay.hidden { display: none; }
+  .modal {
+    background: linear-gradient(135deg, #1a1a3e, #2a2a5e);
+    border: 2px solid #4ecdc4;
+    border-radius: 20px;
+    padding: 40px;
+    text-align: center;
+    max-width: 500px;
+    box-shadow: 0 0 50px rgba(78,205,196,0.5);
+  }
+  .modal h2 {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    background: linear-gradient(90deg, #ffd700, #ff6b6b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .modal p { margin-bottom: 20px; line-height: 1.6; }
+  .btn {
+    background: linear-gradient(90deg, #4ecdc4, #44a3aa);
+    color: #fff;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 15px rgba(78,205,196,0.4);
+  }
+  .btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(78,205,196,0.6); }
+  .legend {
+    display: flex;
+    gap: 15px;
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-box {
+    width: 18px; height: 18px; border-radius: 4px;
+  }
+  .feedback {
+    position: absolute;
+    font-size: 3rem;
+    font-weight: bold;
+    pointer-events: none;
+    animation: pop 1s ease-out forwards;
+    z-index: 50;
+  }
+  @keyframes pop {
+    0% { transform: scale(0) rotate(0); opacity: 0; }
+    30% { transform: scale(1.5) rotate(15deg); opacity: 1; }
+    100% { transform: scale(2) rotate(0) translateY(-50px); opacity: 0; }
+  }
+  .shake { animation: shake 0.4s; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+  }
+</style>
+</head>
+<body>
+
+<div class="game-container">
+  <h1>🏰 LABIRIN QUEST 🏰</h1>
+  <div class="hud">
+    <div>Soal: <span id="hudSoal">1 / 4</span></div>
+    <div>Tingkat: <span id="hudTingkat">Mudah</span></div>
+    <div>Nyawa: <span id="hudNyawa">❤️❤️❤️</span></div>
+  </div>
+  <div class="question-box">
+    <div class="level" id="qLevel">TINGKAT MUDAH</div>
+    <div class="teks" id="qTeks">Tekan MULAI untuk bermain...</div>
+  </div>
+  <canvas id="game" width="550" height="550"></canvas>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-box" style="background:#4ecdc4"></div>Player</div>
+    <div class="legend-item"><div class="legend-box" style="background:#ff4757"></div>Monster</div>
+    <div class="legend-item"><div class="legend-box" style="background:#ffd700"></div>Opsi Jawaban</div>
+    <div class="legend-item"><div class="legend-box" style="background:#555"></div>Dinding</div>
+  </div>
+  <div class="controls">
+    Gerak: <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> atau <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+  </div>
+</div>
+
+<!-- Menu Awal -->
+<div class="overlay" id="menuOverlay">
+  <div class="modal">
+    <h2>🏰 LABIRIN QUEST 🏰</h2>
+    <p><b>Barisan & Deret Aritmatika</b></p>
+    <p style="text-align:left; font-size:0.95rem;">
+      🎯 <b>Tujuan:</b> Jawab 4 soal dengan berjalan ke area jawaban yang benar di dalam labirin.<br><br>
+      ⚠️ <b>Hati-hati:</b> Monster merah akan mengejarmu! Jika tertangkap, nyawa berkurang.<br><br>
+      ✅ Jawaban benar → area jadi aman, lanjut soal berikutnya<br>
+      ❌ Jawaban salah → area ditandai X, coba area lain<br><br>
+      🎵 Klik MULAI untuk mengaktifkan musik latar
+    </p>
+    <button class="btn" id="btnMulai">🎮 MULAI BERMAIN</button>
+  </div>
+</div>
+
+<!-- Overlay Menang -->
+<div class="overlay hidden" id="winOverlay">
+  <div class="modal">
+    <h2>🎉 SELAMAT! 🎉</h2>
+    <p>Kamu berhasil menyelesaikan semua soal<br>Barisan & Deret Aritmatika!</p>
+    <p style="font-size:2rem;">🏆⭐🏆</p>
+    <button class="btn" onclick="location.reload()">🔄 Main Lagi</button>
+  </div>
+</div>
+
+<!-- Overlay Game Over -->
+<div class="overlay hidden" id="gameoverOverlay">
+  <div class="modal">
+    <h2>💀 GAME OVER 💀</h2>
+    <p>Monster berhasil menangkapmu!</p>
+    <p>Coba lagi dan hindari monster dengan lebih hati-hati.</p>
+    <button class="btn" onclick="location.reload()">🔄 Coba Lagi</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   LABIRIN QUEST - Barisan & Deret Aritmatika
+   ========================================================= */
+
+const TILE = 50;
+const COLS = 11, ROWS = 11;
+
+// 0 = jalan, 1 = dinding, P = player, M = monster, A/B/C/D = area jawaban
+const MAZE_TEMPLATE = [
+  [1,1,1,1,1,1,1,1,1,1,1],
+  [1,'P',0,0,1,0,0,0,0,'A',1],
+  [1,0,1,0,1,0,1,1,1,0,1],
+  [1,0,1,0,0,0,0,0,1,0,1],
+  [1,0,0,0,1,1,1,0,0,0,1],
+  [1,'B',1,0,0,'M',0,0,1,0,1],
+  [1,0,0,0,1,1,1,0,0,0,1],
+  [1,0,1,0,0,0,0,0,1,0,1],
+  [1,0,1,1,1,0,1,1,1,0,1],
+  [1,'D',0,0,0,0,1,0,0,'C',1],
+  [1,1,1,1,1,1,1,1,1,1,1],
+];
+
+// 4 soal dengan tingkat kesulitan berbeda
+const QUESTIONS = [
+  {
+    tingkat: "MUDAH • Menentukan Unsur Diketahui",
+    teks: "Sebuah gedung bioskop memiliki baris kursi. Baris pertama berisi 15 kursi, dan setiap baris berikutnya bertambah 3 kursi dari baris sebelumnya. Manakah yang merupakan <b>SUKU PERTAMA (a)</b> dari barisan banyak kursi tersebut?",
+    opsi: { A: 3, B: 15, C: 18, D: 45 },
+    jawaban: "B"
+  },
+  {
+    tingkat: "SEDANG • Menentukan Beda (b)",
+    teks: "Seorang anak menabung di celengan. Minggu pertama ia menabung Rp10.000, minggu kedua Rp15.000, minggu ketiga Rp20.000, dan seterusnya dengan pola yang sama. Berapakah <b>BEDA (b)</b> dari barisan tersebut?",
+    opsi: { A: 2000, B: 5000, C: 10000, D: 15000 },
+    jawaban: "B"
+  },
+  {
+    tingkat: "SULIT • Menentukan Suku ke-n",
+    teks: "Sebuah pabrik memproduksi 200 unit pada hari pertama. Setiap hari produksi bertambah 25 unit dari hari sebelumnya. Berapa jumlah produksi pada <b>HARI KE-10</b>?",
+    opsi: { A: 400, B: 425, C: 450, D: 475 },
+    jawaban: "B" // 200 + (10-1)*25 = 200 + 225 = 425
+  },
+  {
+    tingkat: "SANGAT SULIT • Menentukan Jumlah n Suku (Sn)",
+    teks: "Seorang pedagang menjual buah. Hari pertama laku 20 kg, hari kedua 25 kg, hari ketiga 30 kg, dan seterusnya dengan pola yang sama. Berapa <b>TOTAL buah yang terjual selama 7 hari</b>?",
+    opsi: { A: 210, B: 230, C: 245, D: 260 },
+    jawaban: "C" // S7 = 7/2 * (2*20 + 6*5) = 7/2 * 70 = 245
+  }
+];
+
+/* ===== STATE GAME ===== */
+const state = {
+  maze: [],
+  player: { x: 1, y: 1, tx: 1, ty: 1 }, // tx,ty = target animasi
+  monster: { x: 5, y: 5, tx: 5, ty: 5, moveTimer: 0 },
+  answers: {}, // id -> {x, y, value, closed, wrong}
+  currentQ: 0,
+  nyawa: 3,
+  phase: 'menu', // menu, playing, animCorrect, animWrong, caught, win, gameover
+  particles: [],
+  lastTime: 0,
+  moveCooldown: 0,
+  invulnerable: 0 // waktu kebal setelah tertangkap
+};
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+
+/* ===== INISIALISASI ===== */
+function initMaze() {
+  state.maze = [];
+  state.answers = {};
+  for (let y = 0; y < ROWS; y++) {
+    const row = [];
+    for (let x = 0; x < COLS; x++) {
+      const cell = MAZE_TEMPLATE[y][x];
+      if (cell === 'P') {
+        state.player.x = state.player.tx = x;
+        state.player.y = state.player.ty = y;
+        row.push(0);
+      } else if (cell === 'M') {
+        state.monster.x = state.monster.tx = x;
+        state.monster.y = state.monster.ty = y;
+        row.push(0);
+      } else if (['A','B','C','D'].includes(cell)) {
+        state.answers[cell] = { x, y, value: null, closed: false, wrong: false };
+        row.push(0);
+      } else {
+        row.push(cell);
+      }
+    }
+    state.maze.push(row);
+  }
+}
+
+function setCurrentQuestion() {
+  const q = QUESTIONS[state.currentQ];
+  document.getElementById('qLevel').textContent = q.tingkat;
+  document.getElementById('qTeks').innerHTML = q.teks;
+  document.getElementById('hudSoal').textContent = `${state.currentQ + 1} / 4`;
+  const tingkatLabel = ["Mudah", "Sedang", "Sulit", "Sangat Sulit"];
+  document.getElementById('hudTingkat').textContent = tingkatLabel[state.currentQ];
+  
+  // Set nilai opsi ke area jawaban
+  for (const id of ['A','B','C','D']) {
+    state.answers[id].value = q.opsi[id];
+    state.answers[id].closed = false;
+    state.answers[id].wrong = false;
+  }
+}
+
+function updateNyawa() {
+  document.getElementById('hudNyawa').textContent = '❤️'.repeat(state.nyawa) + '🖤'.repeat(3 - state.nyawa);
+}
+
+/* ===== INPUT ===== */
+const keys = {};
+document.addEventListener('keydown', (e) => {
+  if (state.phase !== 'playing') return;
+  const k = e.key.toLowerCase();
+  let dx = 0, dy = 0;
+  if (k === 'arrowup' || k === 'w') dy = -1;
+  else if (k === 'arrowdown' || k === 's') dy = 1;
+  else if (k === 'arrowleft' || k === 'a') dx = -1;
+  else if (k === 'arrowright' || k === 'd') dx = 1;
+  else return;
+  e.preventDefault();
+  tryMovePlayer(dx, dy);
+});
+
+function tryMovePlayer(dx, dy) {
+  if (state.moveCooldown > 0) return;
+  const nx = state.player.x + dx;
+  const ny = state.player.y + dy;
+  if (nx < 0 || ny < 0 || nx >= COLS || ny >= ROWS) return;
+  if (state.maze[ny][nx] === 1) return;
+  
+  // Cek area jawaban yang sudah ditutup (jadi dinding)
+  for (const id in state.answers) {
+    const a = state.answers[id];
+    if (a.x === nx && a.y === ny && a.closed) return;
+  }
+  
+  state.player.x = nx;
+  state.player.y = ny;
+  state.moveCooldown = 0.12;
+  playSFX('step');
+  
+  // Cek masuk area jawaban
+  for (const id in state.answers) {
+    const a = state.answers[id];
+    if (a.x === nx && a.y === ny && !a.closed && !a.wrong) {
+      checkAnswer(id);
+      break;
+    }
+  }
+}
+
+function checkAnswer(id) {
+  const q = QUESTIONS[state.currentQ];
+  if (id === q.jawaban) {
+    // BENAR
+    state.answers[id].closed = true;
+    state.phase = 'animCorrect';
+    spawnFireworks(state.answers[id].x * TILE + TILE/2, state.answers[id].y * TILE + TILE/2);
+    showFeedback('✅', '#4ecdc4');
+    playSFX('correct');
+    setTimeout(() => {
+      state.currentQ++;
+      if (state.currentQ >= QUESTIONS.length) {
+        state.phase = 'win';
+        document.getElementById('winOverlay').classList.remove('hidden');
+        stopMusic();
+      } else {
+        setCurrentQuestion();
+        state.phase = 'playing';
+      }
+    }, 1500);
+  } else {
+    // SALAH
+    state.answers[id].wrong = true;
+    state.phase = 'animWrong';
+    spawnBomb(state.answers[id].x * TILE + TILE/2, state.answers[id].y * TILE + TILE/2);
+    showFeedback('❌', '#ff4757');
+    playSFX('wrong');
+    canvas.classList.add('shake');
+    setTimeout(() => canvas.classList.remove('shake'), 400);
+    setTimeout(() => {
+      state.phase = 'playing';
+    }, 800);
+  }
+}
+
+function showFeedback(text, color) {
+  const fb = document.createElement('div');
+  fb.className = 'feedback';
+  fb.textContent = text;
+  fb.style.color = color;
+  const rect = canvas.getBoundingClientRect();
+  fb.style.left = (rect.left + rect.width/2 - 30) + 'px';
+  fb.style.top = (rect.top + rect.height/2 - 30) + 'px';
+  document.body.appendChild(fb);
+  setTimeout(() => fb.remove(), 1000);
+}
+
+/* ===== MONSTER AI ===== */
+function updateMonster(dt) {
+  state.monster.moveTimer += dt;
+  if (state.monster.moveTimer < 1.2) return;
+  state.monster.moveTimer = 0;
+  
+  // 70% random, 30% ke arah player
+  let dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+  let move = null;
+  
+  if (Math.random() < 0.3) {
+    // Cari arah yang mendekat ke player
+    const dx = state.player.x - state.monster.x;
+    const dy = state.player.y - state.monster.y;
+    let preferred = [];
+    if (Math.abs(dx) > Math.abs(dy)) {
+      preferred.push([Math.sign(dx), 0]);
+      preferred.push([0, Math.sign(dy) || (Math.random() < 0.5 ? -1 : 1)]);
+    } else {
+      preferred.push([0, Math.sign(dy)]);
+      preferred.push([Math.sign(dx) || (Math.random() < 0.5 ? -1 : 1), 0]);
+    }
+    for (const d of preferred) {
+      const nx = state.monster.x + d[0];
+      const ny = state.monster.y + d[1];
+      if (canMonsterMove(nx, ny)) { move = d; break; }
+    }
+  }
+  
+  if (!move) {
+    // Random
+    dirs = dirs.sort(() => Math.random() - 0.5);
+    for (const d of dirs) {
+      const nx = state.monster.x + d[0];
+      const ny = state.monster.y + d[1];
+      if (canMonsterMove(nx, ny)) { move = d; break; }
+    }
+  }
+  
+  if (move) {
+    state.monster.x += move[0];
+    state.monster.y += move[1];
+  }
+  
+  // Cek tabrakan dengan player
+  if (state.monster.x === state.player.x && state.monster.y === state.player.y && state.invulnerable <= 0) {
+    playerCaught();
+  }
+}
+
+function canMonsterMove(x, y) {
+  if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return false;
+  if (state.maze[y][x] === 1) return false;
+  for (const id in state.answers) {
+    const a = state.answers[id];
+    if (a.x === x && a.y === y && a.closed) return false;
+  }
+  return true;
+}
+
+function playerCaught() {
+  state.nyawa--;
+  updateNyawa();
+  playSFX('caught');
+  spawnBomb(state.player.x * TILE + TILE/2, state.player.y * TILE + TILE/2);
+  state.invulnerable = 2; // 2 detik kebal
+  
+  if (state.nyawa <= 0) {
+    state.phase = 'gameover';
+    document.getElementById('gameoverOverlay').classList.remove('hidden');
+    stopMusic();
+    return;
+  }
+  
+  // Respawn player ke posisi awal
+  state.player.x = state.player.tx = 1;
+  state.player.y = state.player.ty = 1;
+}
+
+/* ===== PARTICLES ===== */
+function spawnFireworks(x, y) {
+  const colors = ['#ffd700', '#ff6b6b', '#4ecdc4', '#ff9ff3', '#feca57'];
+  for (let i = 0; i < 50; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 4;
+    state.particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: 2 + Math.random() * 3,
+      type: 'firework'
+    });
+  }
+}
+
+function spawnBomb(x, y) {
+  for (let i = 0; i < 30; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 1 + Math.random() * 3;
+    state.particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 1,
+      color: i % 2 === 0 ? '#ff4757' : '#ffa502',
+      size: 3 + Math.random() * 4,
+      type: 'bomb'
+    });
+  }
+}
+
+function updateParticles(dt) {
+  for (let i = state.particles.length - 1; i >= 0; i--) {
+    const p = state.particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.15; // gravitasi
+    p.life -= dt * 1.5;
+    if (p.life <= 0) state.particles.splice(i, 1);
+  }
+}
+
+/* ===== RENDERING ===== */
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Gambar maze
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      const px = x * TILE, py = y * TILE;
+      if (state.maze[y][x] === 1) {
+        // Dinding
+        const grad = ctx.createLinearGradient(px, py, px + TILE, py + TILE);
+        grad.addColorStop(0, '#3d3d5c');
+        grad.addColorStop(1, '#2a2a44');
+        ctx.fillStyle = grad;
+        ctx.fillRect(px, py, TILE, TILE);
+        ctx.strokeStyle = '#1a1a2e';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px, py, TILE, TILE);
+      } else {
+        // Lantai
+        ctx.fillStyle = '#1e1e3a';
+        ctx.fillRect(px, py, TILE, TILE);
+        ctx.strokeStyle = '#2a2a4a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px, py, TILE, TILE);
+      }
+    }
+  }
+  
+  // Gambar area jawaban
+  for (const id in state.answers) {
+    const a = state.answers[id];
+    const px = a.x * TILE, py = a.y * TILE;
+    
+    if (a.closed) {
+      // Area aman (hijau)
+      ctx.fillStyle = 'rgba(78, 205, 196, 0.3)';
+      ctx.fillRect(px, py, TILE, TILE);
+      ctx.strokeStyle = '#4ecdc4';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(px + 2, py + 2, TILE - 4, TILE - 4);
+      ctx.fillStyle = '#4ecdc4';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('✓', px + TILE/2, py + TILE/2);
+    } else {
+      // Area jawaban aktif
+      const color = a.wrong ? '#555' : '#ffd700';
+      ctx.fillStyle = a.wrong ? 'rgba(85,85,85,0.5)' : 'rgba(255,215,0,0.3)';
+      ctx.fillRect(px, py, TILE, TILE);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(px + 2, py + 2, TILE - 4, TILE - 4);
+      
+      ctx.fillStyle = color;
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(id, px + TILE/2, py + TILE/2 - 10);
+      
+      if (a.wrong) {
+        ctx.fillStyle = '#ff4757';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.fillText('✗', px + TILE/2, py + TILE/2 + 10);
+      } else if (a.value !== null) {
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 13px sans-serif';
+        let val = a.value;
+        if (state.currentQ === 1 || state.currentQ === 2) {
+          // Format dengan prefix
+          val = state.currentQ === 1 ? (val/1000) + 'rb' : val;
+        }
+        ctx.fillText(val, px + TILE/2, py + TILE/2 + 10);
+      }
+    }
+  }
+  
+  // Gambar monster
+  drawMonster();
+  
+  // Gambar player
+  drawPlayer();
+  
+  // Gambar particles
+  for (const p of state.particles) {
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawPlayer() {
+  const px = state.player.x * TILE + TILE/2;
+  const py = state.player.y * TILE + TILE/2;
+  const blink = state.invulnerable > 0 && Math.floor(state.invulnerable * 10) % 2 === 0;
+  
+  if (!blink) {
+    // Badan
+    ctx.fillStyle = '#4ecdc4';
+    ctx.beginPath();
+    ctx.arc(px, py, TILE/2 - 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Mata
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(px - 6, py - 4, 4, 0, Math.PI * 2);
+    ctx.arc(px + 6, py - 4, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(px - 6, py - 4, 2, 0, Math.PI * 2);
+    ctx.arc(px + 6, py - 4, 2, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Senyum
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(px, py + 2, 6, 0.2 * Math.PI, 0.8 * Math.PI);
+    ctx.stroke();
+  }
+}
+
+function drawMonster() {
+  const px = state.monster.x * TILE + TILE/2;
+  const py = state.monster.y * TILE + TILE/2;
+  const bounce = Math.sin(Date.now() / 200) * 2;
+  
+  // Badan
+  ctx.fillStyle = '#ff4757';
+  ctx.beginPath();
+  ctx.arc(px, py + bounce, TILE/2 - 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#c0392b';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  
+  // Mata seram
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(px - 7, py - 4 + bounce, 5, 0, Math.PI * 2);
+  ctx.arc(px + 7, py - 4 + bounce, 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.arc(px - 7, py - 4 + bounce, 2.5, 0, Math.PI * 2);
+  ctx.arc(px + 7, py - 4 + bounce, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Gigi
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.moveTo(px - 8, py + 6 + bounce);
+  ctx.lineTo(px - 4, py + 12 + bounce);
+  ctx.lineTo(px, py + 6 + bounce);
+  ctx.lineTo(px + 4, py + 12 + bounce);
+  ctx.lineTo(px + 8, py + 6 + bounce);
+  ctx.closePath();
+  ctx.fill();
+}
+
+/* ===== AUDIO ===== */
+let audioCtx = null;
+let musicInterval = null;
+let musicGain = null;
+
+function initAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  musicGain = audioCtx.createGain();
+  musicGain.gain.value = 0.08;
+  musicGain.connect(audioCtx.destination);
+}
+
+function playMusic() {
+  if (!audioCtx) initAudio();
+  // Chord progression: C - Am - F - G
+  const chords = [
+    [261.63, 329.63, 392.00], // C
+    [220.00, 261.63, 329.63], // Am
+    [174.61, 220.00, 261.63], // F
+    [196.00, 246.94, 293.66], // G
+  ];
+  let chordIdx = 0;
+  
+  const playChord = () => {
+    const chord = chords[chordIdx];
+    const now = audioCtx.currentTime;
+    chord.forEach((freq, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = i === 0 ? 'sine' : 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.15, now + 0.1);
+      gain.gain.linearRampToValueAtTime(0.08, now + 0.8);
+      gain.gain.linearRampToValueAtTime(0, now + 1.5);
+      osc.connect(gain);
+      gain.connect(musicGain);
+      osc.start(now);
+      osc.stop(now + 1.5);
+    });
+    chordIdx = (chordIdx + 1) % chords.length;
+  };
+  
+  playChord();
+  musicInterval = setInterval(playChord, 1500);
+}
+
+function stopMusic() {
+  if (musicInterval) {
+    clearInterval(musicInterval);
+    musicInterval = null;
+  }
+}
+
+function playSFX(type) {
+  if (!audioCtx) return;
+  const now = audioCtx.currentTime;
+  
+  if (type === 'step') {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 400;
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(now); osc.stop(now + 0.05);
+  }
+  else if (type === 'correct') {
+    [523.25, 659.25, 783.99].forEach((f, i) => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = f;
+      gain.gain.setValueAtTime(0, now + i * 0.1);
+      gain.gain.linearRampToValueAtTime(0.2, now + i * 0.1 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.3);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(now + i * 0.1); osc.stop(now + i * 0.1 + 0.3);
+    });
+  }
+  else if (type === 'wrong') {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(200, now);
+    osc.frequency.exponentialRampToValueAtTime(50, now + 0.3);
+    gain.gain.setValueAtTime(0.2, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(now); osc.stop(now + 0.4);
+  }
+  else if (type === 'caught') {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.exponentialRampToValueAtTime(80, now + 0.5);
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(now); osc.stop(now + 0.6);
+  }
+}
+
+/* ===== GAME LOOP ===== */
+function gameLoop(timestamp) {
+  const dt = Math.min((timestamp - state.lastTime) / 1000, 0.1);
+  state.lastTime = timestamp;
+  
+  if (state.phase === 'playing') {
+    state.moveCooldown = Math.max(0, state.moveCooldown - dt);
+    state.invulnerable = Math.max(0, state.invulnerable - dt);
+    updateMonster(dt);
+    
+    // Cek tabrakan juga saat player diam
+    if (state.monster.x === state.player.x && state.monster.y === state.player.y && state.invulnerable <= 0) {
+      playerCaught();
+    }
+  }
+  
+  updateParticles(dt);
+  draw();
+  
+  requestAnimationFrame(gameLoop);
+}
+
+/* ===== START GAME ===== */
+document.getElementById('btnMulai').addEventListener('click', () => {
+  initAudio();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  playMusic();
+  document.getElementById('menuOverlay').classList.add('hidden');
+  initMaze();
+  setCurrentQuestion();
+  updateNyawa();
+  state.phase = 'playing';
+});
+
+// Init awal
+initMaze();
+state.lastTime = performance.now();
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
