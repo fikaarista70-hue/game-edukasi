@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tarik Tambang - Barisan & Deret Aritmatika</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+  body {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    min-height: 100vh;
+    color: #fff;
+    padding: 20px;
+  }
+  h1 { text-align: center; margin-bottom: 5px; font-size: 2rem; }
+  .subtitle { text-align: center; opacity: 0.85; margin-bottom: 20px; }
+
+  .arena {
+    max-width: 1100px;
+    margin: 0 auto;
+    background: rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 25px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+
+  .scoreboard {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  .team-score {
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    min-width: 160px;
+    text-align: center;
+  }
+  .team-score.kiri { background: #2196f3; }
+  .team-score.kanan { background: #ff5722; }
+  .round-info { font-size: 1.2rem; font-weight: bold; text-align: center; }
+
+  /* Arena tali tambang */
+  .tambang {
+    position: relative;
+    height: 100px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 15px;
+    margin-bottom: 25px;
+    overflow: hidden;
+    border: 2px solid rgba(255,255,255,0.2);
+  }
+  .tali {
+    position: absolute;
+    top: 50%;
+    left: 5%;
+    right: 5%;
+    height: 8px;
+    background: repeating-linear-gradient(90deg, #8d6e63, #8d6e63 10px, #6d4c41 10px, #6d4c41 20px);
+    transform: translateY(-50%);
+    border-radius: 4px;
+  }
+  .pita {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 60px;
+    background: linear-gradient(180deg, #ffeb3b, #fbc02d);
+    transform: translate(-50%, -50%);
+    border-radius: 6px;
+    transition: left 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 15px rgba(255,235,59,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #333;
+    font-size: 1.2rem;
+  }
+  .garis-tengah {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 3px;
+    height: 100%;
+    background: rgba(255,255,255,0.3);
+    transform: translateX(-50%);
+  }
+
+  /* Split Layout 2 Layar Tim */
+  .dual-screen {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+  .soal-box {
+    background: rgba(255,255,255,0.12);
+    padding: 20px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+  }
+  .soal-box.kiri-box { border-color: rgba(33, 150, 243, 0.5); }
+  .soal-box.kanan-box { border-color: rgba(255, 87, 34, 0.5); }
+  
+  .team-title {
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+  }
+  .soal-teks {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 15px;
+    background: rgba(0,0,0,0.2);
+    padding: 12px;
+    border-radius: 8px;
+    min-height: 110px;
+  }
+  .pilihan {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .pilihan button {
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  .pilihan button:hover:not(:disabled) {
+    background: rgba(255,255,255,0.3);
+    transform: translateX(3px);
+  }
+  .pilihan button.benar { background: #4caf50 !important; border-color: #2e7d32; }
+  .pilihan button.salah { background: #f44336 !important; border-color: #c62828; }
+  .pilihan button:disabled { cursor: not-allowed; opacity: 0.6; }
+
+  .status-info {
+    text-align: center;
+    font-weight: bold;
+    margin-top: 15px;
+    min-height: 24px;
+    font-size: 1.05rem;
+  }
+
+  .btn-next {
+    display: block;
+    margin: 15px auto 0;
+    padding: 12px 30px;
+    background: #ffeb3b;
+    color: #333;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-next:hover:not(:disabled) { background: #fdd835; transform: translateY(-2px); }
+  .btn-next:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .akhir { text-align: center; padding: 30px; }
+  .akhir h2 { font-size: 2rem; margin-bottom: 15px; }
+  .akhir .pemenang { font-size: 1.5rem; margin: 20px 0; }
+  .akhir .emoji { font-size: 4rem; margin: 15px 0; }
+
+  @keyframes shake {
+    0%,100% { transform: translate(-50%, -50%) rotate(0); }
+    25% { transform: translate(-50%, -50%) rotate(-5deg); }
+    75% { transform: translate(-50%, -50%) rotate(5deg); }
+  }
+  .pita.shake { animation: shake 0.4s; }
+</style>
+</head>
+<body>
+
+<h1>🏆 TARIK TAMBANG MATEMATIKA 🏆</h1>
+<p class="subtitle">Barisan & Deret Aritmatika — Balap Cepat & Tepat</p>
+
+<div class="arena">
+  <div class="scoreboard">
+    <div class="team-score kiri">⬅️ TIM KIRI</div>
+    <div class="round-info" id="roundInfo">Ronde 1 / 5</div>
+    <div class="team-score kanan">TIM KANAN ➡️</div>
+  </div>
+
+  <div class="tambang">
+    <div class="garis-tengah"></div>
+    <div class="tali"></div>
+    <div class="pita" id="pita">🎗️</div>
+  </div>
+
+  <div id="gameContainer">
+    <div class="dual-screen">
+      <!-- Layar Tim Kiri -->
+      <div class="soal-box kiri-box">
+        <div class="team-title" style="color: #64b5f6;">⬅️ LAYAR TIM KIRI</div>
+        <div class="soal-teks" id="teksKiri"></div>
+        <div class="pilihan" id="pilihanKiri"></div>
+      </div>
+
+      <!-- Layar Tim Kanan -->
+      <div class="soal-box kanan-box">
+        <div class="team-title" style="color: #ff8a65; text-align: right;">LAYAR TIM KANAN ➡️</div>
+        <div class="soal-teks" id="teksKanan"></div>
+        <div class="pilihan" id="pilihanKanan"></div>
+      </div>
+    </div>
+
+    <div class="status-info" id="statusInfo">⚡ Siapa cepat dan benar, dia yang menarik tali!</div>
+    <button class="btn-next" id="btnNext" disabled>Ronde Berikutnya ➡️</button>
+  </div>
+</div>
+
+<script>
+const soalBank = [
+  {
+    topik: "Ronde 1: Menentukan Unsur yang Diketahui",
+    kiri: {
+      teks: "Dari barisan aritmatika 5, 9, 13, 17, 21, ..., manakah nilai suku pertama (a) dan beda (b) yang benar?",
+      pilihan: ["a = 5 dan b = 4", "a = 4 dan b = 5", "a = 5 dan b = 3", "a = 9 dan b = 4"],
+      jawaban: 0
+    },
+    kanan: {
+      teks: "Dari barisan aritmatika 12, 19, 26, 33, 40, ..., manakah nilai suku pertama (a) dan beda (b) yang benar?",
+      pilihan: ["a = 7 dan b = 12", "a = 12 dan b = 7", "a = 12 dan b = 6", "a = 19 dan b = 7"],
+      jawaban: 1
+    }
+  },
+  {
+    topik: "Ronde 2: Menentukan Suku Tertentu (Un)",
+    kiri: {
+      teks: "Diketahui barisan aritmatika 3, 7, 11, 15, ... Berapakah nilai suku ke-10 (U₁₀)?",
+      pilihan: ["35", "37", "39", "41"],
+      jawaban: 2 // U10 = 3 + 9(4) = 39
+    },
+    kanan: {
+      teks: "Diketahui barisan aritmatika 6, 11, 16, 21, ... Berapakah nilai suku ke-12 (U₁₂)?",
+      pilihan: ["56", "61", "66", "71"],
+      jawaban: 1 // U12 = 6 + 11(5) = 61
+    }
+  },
+  {
+    topik: "Ronde 3: Menentukan Beda (b)",
+    kiri: {
+      teks: "Suatu barisan aritmatika memiliki suku pertama a = 4 dan suku ke-7 (U₇) = 22. Berapakah beda (b) dari barisan tersebut?",
+      pilihan: ["2", "3", "4", "5"],
+      jawaban: 1 // 4 + 6b = 22 => 6b = 18 => b = 3
+    },
+    kanan: {
+      teks: "Suatu barisan aritmatika memiliki suku pertama a = 10 dan suku ke-6 (U₆) = 35. Berapakah beda (b) dari barisan tersebut?",
+      pilihan: ["4", "5", "6", "7"],
+      jawaban: 1 // 10 + 5b = 35 => 5b = 25 => b = 5
+    }
+  },
+  {
+    topik: "Ronde 4: Menentukan Suku Pertama (a)",
+    kiri: {
+      teks: "Diketahui suatu barisan aritmatika memiliki beda b = 4 dan suku ke-8 (U₈) = 33. Berapakah nilai suku pertama (a)?",
+      pilihan: ["3", "5", "7", "9"],
+      jawaban: 0 // a + 7(4) = 33 => a + 28 = 33 => a = 5? Wait: 33 - 28 = 5 (jawaban indeks 1)
+    },
+    kanan: {
+      teks: "Diketahui suatu barisan aritmatika memiliki beda b = 6 dan suku ke-9 (U₉) = 52. Berapakah nilai suku pertama (a)?",
+      pilihan: ["2", "4", "6", "8"],
+      jawaban: 1 // a + 8(6) = 52 => a + 48 = 52 => a = 4
+    }
+  },
+  {
+    topik: "Ronde 5: Menentukan Jumlah Suku (Sn)",
+    kiri: {
+      teks: "Diketahui deret aritmatika 2 + 5 + 8 + 11 + ... Berapakah jumlah 10 suku pertama (S₁₀)?",
+      pilihan: ["145", "155", "165", "175"],
+      jawaban: 1 // S10 = 10/2 * (2(2) + 9(3)) = 5 * (4 + 27) = 5 * 31 = 155
+    },
+    kanan: {
+      teks: "Diketahui deret aritmatika 4 + 8 + 12 + 16 + ... Berapakah jumlah 8 suku pertama (S₈)?",
+      pilihan: ["136", "144", "152", "160"],
+      jawaban: 1 // S8 = 8/2 * (2(4) + 7(4)) = 4 * (8 + 28) = 4 * 36 = 144
+    }
+  }
+];
+
+// Koreksi indeks jawaban Ronde 4 Kiri (a + 28 = 33 -> a = 5)
+soalBank[3].kiri.jawaban = 1;
+
+let ronde = 0;
+let posisi = 0; // -5 s.d. +5
+let rondeSelesai = false;
+
+const pita = document.getElementById('pita');
+const roundInfo = document.getElementById('roundInfo');
+const statusInfo = document.getElementById('statusInfo');
+const btnNext = document.getElementById('btnNext');
+
+function updateTali() {
+  const persen = 50 + posisi * 9; 
+  pita.style.left = persen + '%';
+  pita.classList.add('shake');
+  setTimeout(() => pita.classList.remove('shake'), 400);
+}
+
+function muatRonde() {
+  rondeSelesai = false;
+  btnNext.disabled = true;
+  statusInfo.textContent = "⚡ Siapa cepat dan benar, dia yang menarik tali!";
+  statusInfo.style.color = "#fff";
+
+  const dataRonde = soalBank[ronde];
+  roundInfo.textContent = `Ronde ${ronde + 1} / 5 — ${dataRonde.topik}`;
+
+  // Render Soal Kiri
+  document.getElementById('teksKiri').textContent = dataRonde.kiri.teks;
+  const areaKiri = document.getElementById('pilihanKiri');
+  areaKiri.innerHTML = dataRonde.kiri.pilihan.map((p, i) => 
+    `<button class="btn-kiri" data-idx="${i}">${String.fromCharCode(65+i)}. ${p}</button>`
+  ).join('');
+
+  // Render Soal Kanan
+  document.getElementById('teksKanan').textContent = dataRonde.kanan.teks;
+  const areaKanan = document.getElementById('pilihanKanan');
+  areaKanan.innerHTML = dataRonde.kanan.pilihan.map((p, i) => 
+    `<button class="btn-kanan" data-idx="${i}">${String.fromCharCode(65+i)}. ${p}</button>`
+  ).join('');
+
+  // Event Listener
+  document.querySelectorAll('.btn-kiri').forEach(btn => {
+    btn.addEventListener('click', () => prosesJawaban('kiri', parseInt(btn.dataset.idx), btn));
+  });
+  document.querySelectorAll('.btn-kanan').forEach(btn => {
+    btn.addEventListener('click', () => prosesJawaban('kanan', parseInt(btn.dataset.idx), btn));
+  });
+}
+
+function prosesJawaban(tim, idxJawaban, btnElement) {
+  if (rondeSelesai) return;
+
+  const data = soalBank[ronde][tim];
+  const isBenar = idxJawaban === data.jawaban;
+
+  if (isBenar) {
+    rondeSelesai = true;
+    disableAllButtons();
+    btnElement.classList.add('benar');
+
+    if (tim === 'kiri') {
+      posisi -= 1;
+      statusInfo.textContent = "🎉 TIM KIRI MENJAWAB LEBIH CEPAT & BENAR! Tali tertarik ke Kiri!";
+      statusInfo.style.color = "#64b5f6";
+    } else {
+      posisi += 1;
+      statusInfo.textContent = "🎉 TIM KANAN MENJAWAB LEBIH CEPAT & BENAR! Tali tertarik ke Kanan!";
+      statusInfo.style.color = "#ff8a65";
+    }
+    updateTali();
+    btnNext.disabled = false;
+  } else {
+    btnElement.disabled = true;
+    btnElement.classList.add('salah');
+    statusInfo.textContent = `❌ TIM ${tim.toUpperCase()} SALAH! Kesempatan masih terbuka untuk tim lawan!`;
+    statusInfo.style.color = "#ff5252";
+  }
+}
+
+function disableAllButtons() {
+  document.querySelectorAll('.pilihan button').forEach(b => b.disabled = true);
+}
+
+btnNext.addEventListener('click', () => {
+  ronde++;
+  if (ronde < soalBank.length) {
+    muatRonde();
+  } else {
+    tampilkanHasil();
+  }
+});
+
+function tampilkanHasil() {
+  let emoji, pesan, warna;
+  if (posisi < 0) {
+    emoji = '🎉⬅️🏆';
+    pesan = 'TIM KIRI MENANG!';
+    warna = '#2196f3';
+  } else if (posisi > 0) {
+    emoji = '🏆➡️🎉';
+    pesan = 'TIM KANAN MENANG!';
+    warna = '#ff5722';
+  } else {
+    emoji = '🤝';
+    pesan = 'SERI! KEDUA TIM SAMA-SAMA HEBAT!';
+    warna = '#ffeb3b';
+  }
+
+  document.getElementById('gameContainer').innerHTML = `
+    <div class="akhir">
+      <div class="emoji">${emoji}</div>
+      <h2 style="color:${warna}">${pesan}</h2>
+      <p>Skor/Posisi Akhir Tali: <b>${posisi > 0 ? '+' : ''}${posisi}</b></p>
+      <button class="btn-next" onclick="location.reload()" style="margin-top:20px;">🔄 Main Lagi</button>
+    </div>
+  `;
+}
+
+// Inisialisasi awal
+updateTali();
+muatRonde();
+</script>
+</body>
+</html>
